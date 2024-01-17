@@ -1,0 +1,55 @@
+From 8d736a628931a61625944b1fc5ce402f4c715ca7 Mon Sep 17 00:00:00 2001
+From: "deepak.s" <deepak.s@adlinktech.com>
+Date: Tue, 14 Nov 2023 16:06:44 +0530
+Subject: [PATCH] usb-ethenet-bringup-fix
+
+---
+ drivers/usb/dwc3/dwc3-qcom.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/drivers/usb/dwc3/dwc3-qcom.c b/drivers/usb/dwc3/dwc3-qcom.c
+index d3f3937d7005..7d252fdbf870 100644
+--- a/drivers/usb/dwc3/dwc3-qcom.c
++++ b/drivers/usb/dwc3/dwc3-qcom.c
+@@ -91,6 +91,7 @@ struct dwc3_qcom {
+ 	bool			pm_suspended;
+ 	struct icc_path		*icc_path_ddr;
+ 	struct icc_path		*icc_path_apps;
++	struct regulator        *vref_usb;
+ };
+ 
+ static inline void dwc3_qcom_setbits(void __iomem *base, u32 offset, u32 val)
+@@ -867,6 +868,30 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
+ 		dev_err(dev, "failed to setup IRQs, err=%d\n", ret);
+ 		goto clk_disable;
+ 	}
++       qcom->vref_usb = devm_regulator_get(&pdev->dev, "vref");
++       if(IS_ERR(qcom->vref_usb))
++        {
++               qcom->vref_usb = NULL;
++                dev_err(qcom->dev, "ADLINK Failed to get property\n");
++                goto depopulate;
++                }
++                ret = regulator_set_voltage(qcom->vref_usb, 1800000, 2960000);
++                if (ret)
++                {
++                        dev_err(qcom->dev, "ADLINK Failed to set voltage for vref regulator\n");
++                }
++
++                ret = regulator_set_load(qcom->vref_usb, 200000);
++                if (ret)
++                {
++                        dev_err(qcom->dev, "ADLINK Failed to set load for vref regulator\n");
++                }
++
++                ret = regulator_enable(qcom->vref_usb);
++                if (ret)
++                {
++                        dev_err(qcom->dev, "ADLINK Failed to enable for vref regulator\n");
++                }
+ 
+ 	/*
+ 	 * Disable pipe_clk requirement if specified. Used when dwc3
+-- 
+2.25.1
+

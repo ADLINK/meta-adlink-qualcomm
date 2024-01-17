@@ -1,0 +1,26 @@
+From 54e764b146da9b60134c2a343d05aa4014b92c5b Mon Sep 17 00:00:00 2001
+From: "deepak.s" <deepak.s@adlinktech.com>
+Date: Tue, 14 Nov 2023 16:09:34 +0530
+Subject: [PATCH] usb-lpm-disable
+
+---
+ drivers/usb/core/hcd.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 94b305bbd621..4a9c28495a0a 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1005,7 +1005,8 @@ static int register_root_hub(struct usb_hcd *hcd)
+ 	if (le16_to_cpu(usb_dev->descriptor.bcdUSB) >= 0x0201) {
+ 		retval = usb_get_bos_descriptor(usb_dev);
+ 		if (!retval) {
+-			usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
++			printk("adlink skip lpm support and check hub \n");
++//			usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
+ 		} else if (usb_dev->speed >= USB_SPEED_SUPER) {
+ 			mutex_unlock(&usb_bus_idr_lock);
+ 			dev_dbg(parent_dev, "can't read %s bos descriptor %d\n",
+-- 
+2.25.1
+
