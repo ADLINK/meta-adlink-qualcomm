@@ -1,0 +1,10 @@
+[Unit]
+Description=gpio service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/sh /etc/gpio_enable.sh 
+
+[Install]
+WantedBy=multi-user.target

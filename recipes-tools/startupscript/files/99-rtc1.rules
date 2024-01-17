@@ -1,0 +1,1 @@
+KERNEL=="rtc1", SUBSYSTEM=="rtc", DRIVER=="", ATTR{name}=="rtc-pcf8563 15-0051", SYMLINK="rtc", MODE="0666"

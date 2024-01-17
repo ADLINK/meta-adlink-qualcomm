@@ -1,0 +1,10 @@
+#!/bin/sh
+devmem2 0x0F19D000 w 0x1801	#gpio157
+devmem2 0x0F19E000 w 0x1801	#gpio158
+devmem2 0x0F1A0000 w 0x1801	#gpio160
+devmem2 0x0F1A2000 w 0x1801	#gpio162
+devmem2 0x0F1A4000 w 0x1801 	#gpio164
+devmem2 0x0F1A6000 w 0x1801 	#gpio166
+devmem2 0x0F546000 w 0x1801 	#gpio70
+
+exit 0
