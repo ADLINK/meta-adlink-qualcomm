@@ -10,19 +10,21 @@ inherit pkgconfig systemd update-rc.d
 do_rm_work[noexec] = "1"
 
 SRC_URI:append = "file://99-rtc1.rules \
-file://wifimodule.tar;unpack=0 \
 file://gpio_enable.sh \
 file://gpio.service \
 file://version.sh \
 file://version.service \
 file://version.c \
+file://gui.sh \
 file://fastboot.sh \
+file://gui.service \
 file://checkinterface.c \
 "
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_PACKAGES += "${PN}"
 SYSTEMD_SERVICE:${PN} += "version.service"
 SYSTEMD_SERVICE:${PN} += "gpio.service"
+SYSTEMD_SERVICE:${PN} += "gui.service"
 
 INITSCRIPT_NAME = "adlinkstartupscript"
 INITSCRIPT_PARAMS = "start 99 2 3 4 5 . stop 19 0 1 6 ."
@@ -55,6 +57,10 @@ do_install() {
         install -m 0644 ${WORKDIR}/version.sh -D ${D}${sysconfdir}/
         install -m 0644 ${WORKDIR}/version.service -D ${D}${sysconfdir}/systemd/system/
 
+
+        install -m 0644 ${WORKDIR}/gui.sh -D ${D}${sysconfdir}/
+        install -m 0644 ${WORKDIR}/gui.service -D ${D}${sysconfdir}/systemd/system/
+
 	
         install -m 0644 ${WORKDIR}/version -D ${D}${bindir}
         install -m 0644 ${WORKDIR}/device-info -D ${D}${bindir}
@@ -64,6 +70,8 @@ do_install() {
 
         chmod +x ${D}${sysconfdir}/gpio_enable.sh
         chmod +x ${D}${sysconfdir}/version.sh
+        chmod +x ${D}${sysconfdir}/gui.sh
+        chmod +x ${D}${sysconfdir}/fastboot.sh
 	chmod +x ${D}${bindir}/version 
 	chmod +x ${D}${bindir}/device-info 
 

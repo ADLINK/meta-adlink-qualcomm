@@ -1,0 +1,10 @@
+[Unit]
+Description=gui service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/sh /etc/gui.sh
+
+[Install]
+WantedBy=multi-user.target

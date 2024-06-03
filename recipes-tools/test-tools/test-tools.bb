@@ -15,9 +15,6 @@ file://gpiopwm_routines.h \
 file://spidev_test.c \
 file://test.wav \
 file://cpu_freq.sh \
-file://camera_weston.sh \
-file://cam1_test.sh \
-file://cam2_test.sh \
 file://sd_test.sh \
 file://sd_val.sh \
 file://eltt2.c \
@@ -51,9 +48,6 @@ do_install() {
         install -m 0644 ${WORKDIR}/adlink_pwm -D ${D}${bindir}
         install -m 0644 ${WORKDIR}/cpu_freq.sh -D ${D}${bindir}
 
-        install -m 0644 ${WORKDIR}/camera_weston.sh  -D ${D}${sysconfdir}/
-        install -m 0644 ${WORKDIR}/cam2_test.sh  -D ${D}${sysconfdir}/
-        install -m 0644 ${WORKDIR}/cam1_test.sh  -D ${D}${sysconfdir}/
         install -m 0644 ${WORKDIR}/sd_test.sh  -D ${D}${sysconfdir}/
         install -m 0644 ${WORKDIR}/sd_val.sh  -D ${D}${sysconfdir}/
         install -m 0644 ${WORKDIR}/test.wav  -D ${D}${sysconfdir}/
@@ -65,9 +59,6 @@ do_install() {
         chmod +x ${D}${bindir}/ad-litbmc-fwupd
         chmod +x ${D}${bindir}/cpu_freq.sh
         chmod +x ${D}${bindir}/adlink_pwm
-        chmod +x ${D}${sysconfdir}/camera_weston.sh
-        chmod +x ${D}${sysconfdir}/cam2_test.sh
-        chmod +x ${D}${sysconfdir}/cam1_test.sh
         chmod +x ${D}${sysconfdir}/sd_test.sh
         chmod +x ${D}${sysconfdir}/sd_val.sh
 
