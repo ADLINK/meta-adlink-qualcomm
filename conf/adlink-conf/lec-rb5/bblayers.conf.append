@@ -1,0 +1,3 @@
+# ADLINK Yocto Project Release layers
+BBLAYERS += "${OEROOT}/meta-adlink-qualcomm"
+
