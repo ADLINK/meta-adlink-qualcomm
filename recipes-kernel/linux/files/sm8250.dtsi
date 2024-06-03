@@ -2251,6 +2251,7 @@
 			#sound-dai-cells = <1>;
 			#address-cells = <2>;
 			#size-cells = <0>;
+			status = "ok";
 		};
 
 		audiocc: clock-controller@3300000 {
@@ -4322,6 +4323,13 @@
 			};
 
 			pri_mi2s_active: pri-mi2s-active {
+				mclk {
+					pins = "gpio136";
+					function = "pri_mi2s";
+					drive-strength = <8>;
+					bias-disable;
+					output-high;
+				};
 				sclk {
 					pins = "gpio138";
 					function = "mi2s0_sck";
@@ -4965,8 +4973,7 @@
 
 			qup_uart17_default: qup-uart17-default {
 				mux {
-					pins = "gpio52", "gpio53",
-						"gpio54", "gpio55";
+					pins = 	"gpio54", "gpio55";
 					function = "qup17";
 				};
 			};

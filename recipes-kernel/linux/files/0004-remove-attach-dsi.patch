@@ -1,0 +1,44 @@
+From e967af73007f789fafed99da041eac3fdb9f87b2 Mon Sep 17 00:00:00 2001
+From: "deepak.s" <deepak.s@adlinktech.com>
+Date: Wed, 14 Feb 2024 11:59:08 +0530
+Subject: [PATCH] remove-attach-dsi
+
+---
+ drivers/gpu/drm/bridge/lontium-lt9611uxc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/lontium-lt9611uxc.c b/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
+index 33a928dc1f06..cd2057f861cf 100644
+--- a/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
++++ b/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
+@@ -970,23 +970,23 @@ static int lt9611uxc_probe(struct i2c_client *client,
+ 	drm_bridge_add(&lt9611uxc->bridge);
+ 
+ 	/* Attach primary DSI, if specified */
+-	if (lt9611uxc->dsi0_node) {
++/*	if (lt9611uxc->dsi0_node) {
+ 		lt9611uxc->dsi0 = lt9611uxc_attach_dsi(lt9611uxc, lt9611uxc->dsi0_node);
+ 		if (IS_ERR(lt9611uxc->dsi0)) {
+ 			ret = PTR_ERR(lt9611uxc->dsi0);
+ 			goto err_remove_bridge;
+ 		}
+ 	}
+-
++*/
+ 	/* Attach secondary DSI, if specified */
+-	if (lt9611uxc->dsi1_node) {
++/*	if (lt9611uxc->dsi1_node) {
+ 		lt9611uxc->dsi1 = lt9611uxc_attach_dsi(lt9611uxc, lt9611uxc->dsi1_node);
+ 		if (IS_ERR(lt9611uxc->dsi1)) {
+ 			ret = PTR_ERR(lt9611uxc->dsi1);
+ 			goto err_remove_bridge;
+ 		}
+ 	}
+-
++*/
+ 	return lt9611uxc_audio_init(dev, lt9611uxc);
+ 
+ err_remove_bridge:
+-- 
+2.25.1
+

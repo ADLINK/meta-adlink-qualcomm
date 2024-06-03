@@ -61,20 +61,30 @@
 			};
 		};
 	};
+	
+  
+ 	bl: backlight {
+//                compatible = "gpio-backlight";
+//		pinctrl-0 = <&dsi0_back_light_en>;
+//               pinctrl-names = "default";
+//                gpios = <&pm8150l_gpios 10 GPIO_ACTIVE_HIGH>;
+		enable-gpios = <&tlmm 112 GPIO_ACTIVE_HIGH>;
+        };
+
+
 
 	leds {
 		compatible = "gpio-leds";
 	     
 		pinctrl-0 = <&dsi0_back_light_en>;
-                pinctrl-names = "default";
+              pinctrl-names = "default";
 
                 dsibacklight {
                         label = "dsi:backlight";
-                        gpios = <&pm8150l_gpios 10 GPIO_ACTIVE_HIGH>;
+	                gpios = <&pm8150l_gpios 10 GPIO_ACTIVE_HIGH>;
                         linux,default-trigger = "panic-indicator";
                         default-state = "off";
                 };
-
 
 
 		led-user4 {
@@ -588,43 +598,32 @@
 	qcom,dual-dsi-mode;
 	qcom,master-dsi;
 #endif
-
 	ports {
 		port@1 {
 			endpoint {
-				remote-endpoint = <&lt9611_a>;
+				remote-endpoint = <&simple_lt96>;
 				data-lanes = <0 1 2 3>;
 			};
 		};
-	};  
-
-/*	panel@0 {
-		compatible = "auo,b101aw03";
-		reg = <0>;
-		status = "okay";
-		dsi-lanes = <4>;
-		video-mode = <0>;
-		panel-width-mm = <293>;
-		panel-height-mm = <165>;
-		display-timings {
-			timing {
-				clock-frequency = <148000000>;
-				hactive = <1920>;
-				vactive = <1200>;
-				hfront-porch = <77>;
-				hsync-len = <56>;
-				hback-porch = <117>;
-				vfront-porch = <11>;
-				vsync-len = <19>;
-				vback-porch = <19>;
-				hsync-active = <0>;
-				vsync-active = <0>;
-				de-active = <0>;
-				pixelclk-active = <0>;
-			};
-		};
 	};
-*/
+	        panel@0 {
+                compatible = "adlink,lt9611uxc";
+                reg = <0>;
+                status = "ok";
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+                                simple_lt96: endpoint {
+                                        remote-endpoint = <&lt9611_a>;
+                                };
+                        };
+                };
+
+           };
+
 };
 
 &dsi0_phy {
@@ -646,6 +645,10 @@
 };
 
 /* LS-I2C0 */
+&i2c4 {
+        clock-frequency  = <400000>;
+	status = "disabled";
+};
 
 &i2c5 {
 	status = "okay";
@@ -987,9 +990,10 @@
 
 &sound {
 	compatible = "qcom,qrb5165-rb5-sndcard";
+	status = "ok";
 	pinctrl-0 = <&tert_mi2s_active>,<&pri_mi2s_active>;
 	pinctrl-names = "default";
-	model = "Qualcomm-RB5-WSA8815-Speakers-DMIC0";
+	model = "ADLINK-LEC-RB5-SND";
 	audio-routing =
 		"SpkrLeft IN", "WSA_SPK1 OUT",
 		"SpkrRight IN", "WSA_SPK2 OUT",
@@ -998,7 +1002,7 @@
 		"MM_DL1",  "MultiMedia1 Playback",
 		"MM_DL2",  "MultiMedia2 Playback",
 		"MultiMedia3 Capture", "MM_UL3";
-
+	mi2s-ext-mclk = <1>, <0>, <0>, <0>, <0>, <0>;
 	mm1-dai-link {
 		link-name = "MultiMedia1";
 		cpu {
@@ -1034,36 +1038,50 @@
 			sound-dai = <&lt9611_codec 0>;
 		};
 	};
-
 	dma-dai-link {
-		link-name = "WSA Playback";
-		cpu {
-			sound-dai = <&q6afedai WSA_CODEC_DMA_RX_0>;
-		};
+                link-name = "WSA Playback";
+                cpu {
+                        sound-dai = <&q6afedai WSA_CODEC_DMA_RX_0>;
+                };
 
-		platform {
-			sound-dai = <&q6routing>;
-		};
+                platform {
+                        sound-dai = <&q6routing>;
+                };
 
-		codec {
-			sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
-		};
-	};
+                codec {
+                        sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
+                };
+        };
 
-	va-dai-link {
-		link-name = "VA Capture";
-		cpu {
-			sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>;
-		};
+        va-dai-link {
+                link-name = "VA Capture";
+                cpu {
+                        sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>;
+                };
 
-		platform {
-			sound-dai = <&q6routing>;
-		};
+                platform {
+                        sound-dai = <&q6routing>;
+                };
 
-		codec {
-			sound-dai = <&vamacro 0>;
-		};
-	};
+                codec {
+                        sound-dai = <&vamacro 0>;
+                };
+        };
+
+	primary-dai-link {
+                link-name = "Primary MI2S Playback";
+                cpu {
+                        sound-dai = <&q6afedai PRIMARY_MI2S_RX>;
+                };
+
+                platform {
+                        sound-dai = <&q6routing>;
+                };
+
+                codec {
+                        sound-dai = <&tlv320aic3x 0>;
+                };
+        };
 };
 
 /* CAN */
@@ -1088,7 +1106,7 @@
 	left_spkr: wsa8810-left{
 		compatible = "sdw10217211000";
 		reg = <0 3>;
-		powerdown-gpios = <&tlmm 130 GPIO_ACTIVE_HIGH>;
+		powerdown-gpios = <&tlmm 170 GPIO_ACTIVE_HIGH>;
 		#thermal-sensor-cells = <0>;
 		sound-name-prefix = "SpkrLeft";
 		#sound-dai-cells = <0>;
@@ -1097,7 +1115,7 @@
 	right_spkr: wsa8810-right{
 		compatible = "sdw10217211000";
 		reg = <0 4>;
-		powerdown-gpios = <&tlmm 130 GPIO_ACTIVE_HIGH>;
+		powerdown-gpios = <&tlmm 170 GPIO_ACTIVE_HIGH>;
 		#thermal-sensor-cells = <0>;
 		sound-name-prefix = "SpkrRight";
 		#sound-dai-cells = <0>;
@@ -1423,10 +1441,12 @@
 
 &usb_1 {
 	status = "okay";
+	vref-supply = <&vreg_l6c_2p96>;
 };
 
 &usb_1_dwc3 {
-        dr_mode = "otg";
+//        dr_mode = "otg";
+      dr_mode = "peripheral";
         usb-role-switch;
 };
 
@@ -1505,35 +1525,124 @@
 		#size-cells = <0>;
 
 		/* The port index denotes CSIPHY id i.e. csiphy2 */
+		port@0 {
+			reg = <0>;
+			csiphy0_ep: endpoint {
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+				remote-endpoint = <&imx219_ep0>;
+			};
+
+		};
 		port@2 {
 			reg = <2>;
 			csiphy2_ep: endpoint {
 				clock-lanes = <7>;
 				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx412_ep>;
+				remote-endpoint = <&imx219_ep2>;
+			};
+
+		};
+		port@3 {
+			reg = <3>;
+			csiphy3_ep: endpoint {
+				clock-lanes = <7>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&imx219_ep3>;
+			};
+
+		};
+		port@1 {
+			reg = <1>;
+			csiphy1_ep: endpoint {
+				clock-lanes = <7>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&imx219_ep1>;
+			};
+
+		};
+		port@4 {
+			reg = <4>;
+			csiphy4_ep: endpoint {
+				clock-lanes = <7>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&imx219_ep4>;
+			};
+
+		};
+		port@5 {
+			reg = <5>;
+			csiphy5_ep: endpoint {
+				clock-lanes = <7>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&imx219_ep5>;
 			};
 
 		};
 	};
 };
 
-&cci1 {
+&cci0 {
+	clock-frequency=<37500000>;
 	status = "okay";
 };
 
-&cci0 {
-	status = "ok";
-};
-
 &cci0_i2c0 {
-	camera@1a {
-		compatible = "sony,imx412";
+	//CI_I2C_SCL0 - CCI_I2C_SDA0 		
+
+	ov5640@3c {
+		 // CAM_0 
+//		compatible = "sony,imx219";
+		compatible = "ovti,ov5640";
+		reg = <0x3c>;
+
+		reset-gpios = <&tlmm 3 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "suspend";
+
+	        pinctrl-0 = <&cam_sensor_mclk0_active
+                                &cam_sensor0_power_adlink_active
+                                &cam_sensor0_active_adlink_rst0 >;
+                pinctrl-1 = <&cam_sensor_mclk0_suspend
+                                &cam_sensor0_power_adlink_suspend
+                                &cam_sensor0_suspend_adlink_rst0>;
+
+		clocks = <&camcc CAM_CC_MCLK0_CLK>;
+		assigned-clocks = <&camcc CAM_CC_MCLK0_CLK>;
+		assigned-clock-rates = <24000000>;
+
+		power-domains = <&camcc TITAN_TOP_GDSC>;
+		DOVDD-supply  = <&vreg_l7f_1p8>;
+		AVDD-supply = <&vreg_l6f_2p8>;
+		DVDD-supply = <&vreg_l2f_1p2>;
+	
+//		dovdd-supply  = <&vreg_l7f_1p8>;
+//		avdd-supply = <&vdc_5v>;
+//		dvdd-supply = <&vdc_5v>;
+
+		status = "okay";
+		port {
+			imx219_ep0: endpoint {
+				clock-lanes = <0>;
+				link-frequencies = /bits/ 64 <456000000>;
+				data-lanes = <1 2>;
+				remote-endpoint = <&csiphy0_ep>;
+			};
+		};
+	};
+	// CAM_2 
+	imx214 {
+		compatible = "sony,imx214";
 		reg = <0x1a>;
 
-		reset-gpios = <&tlmm 78 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&tlmm 116 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "default", "suspend";
-		pinctrl-0 = <&cam2_default>;
-		pinctrl-1 = <&cam2_suspend>;
+
+                pinctrl-0 = <&cam_sensor_mclk2_active
+                                 &cam_sensor_active_adlink_rst2
+                                 &cam_sensor_power_adlink_active>;
+                pinctrl-1 = <&cam_sensor_mclk2_suspend
+                                 &cam_sensor_suspend_adlink_rst2
+                                 &cam_sensor_power_adlink_suspend>;
 
 		clocks = <&camcc CAM_CC_MCLK2_CLK>;
 		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
@@ -1544,13 +1653,173 @@
 		avdd-supply = <&vdc_5v>;
 		dvdd-supply = <&vdc_5v>;
 
-		status = "okay";
+		status = "disabled";
 		port {
-			imx412_ep: endpoint {
+			imx219_ep2: endpoint {
 				clock-lanes = <1>;
 				link-frequencies = /bits/ 64 <600000000>;
 				data-lanes = <1 2 3 4>;
 				remote-endpoint = <&csiphy2_ep>;
+			};
+		};
+	};
+};
+
+&cci0_i2c1 {
+	// CCI_I2C_SDA1 - CCI_I2C_SCL1 
+
+	imx214@1a {
+		//CAM 3
+		compatible = "sony,imx214";
+		reg = <0x1a>;
+
+		reset-gpios = <&tlmm 126 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "suspend";
+                pinctrl-0 = <&cam_sensor_mclk3_active
+                                 &cam_sensor3_active_adlink_rst2
+                                 &cam_sensor3_power_adlink_active>;
+                pinctrl-1 = <&cam_sensor_mclk3_suspend
+                                 &cam_sensor3_suspend_adlink_rst2
+                                 &cam_sensor3_power_adlink_suspend>;
+
+		enable-gpios = <&tlmm 125 GPIO_ACTIVE_HIGH>;
+		clocks = <&camcc CAM_CC_MCLK3_CLK>;
+		assigned-clocks = <&camcc CAM_CC_MCLK3_CLK>;
+		assigned-clock-rates = <24000000>;
+		clock-frequency = <24000000>;
+
+		vana-supply = <&vreg_l6f_2p8>;
+		vdig-supply = <&vreg_l2f_1p2>;
+
+		power-domains = <&camcc TITAN_TOP_GDSC>;
+		dovdd-supply  = <&vreg_l7f_1p8>;
+		avdd-supply = <&vreg_l6f_2p8>;
+		dvdd-supply = <&vreg_l2f_1p2>;
+		rotation = <180>;
+		
+		status = "ok";
+		port {
+			imx219_ep3: endpoint {
+				clock-lanes = <1>;
+				link-frequencies = /bits/ 64 <480000000>;
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&csiphy3_ep>;
+			};
+		};
+	};
+};
+
+
+&cci1 {
+	status = "disabled";
+};
+
+&cci1_i2c0{
+	// CCI_I2C_SDA2 - CCI_I2C_SCL2 
+
+	camera@1a {
+		//CAM 4
+		compatible = "sony,imx219";
+		reg = <0x1a>;
+
+		reset-gpios = <&tlmm 145  GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "suspend";
+                 pinctrl-0 = <&cam_sensor_mclk4_active
+                                 &cam_sensor04_active_adlink_rst2
+                                 &cam_sensor04_power_adlink_active>;
+                pinctrl-1 = <&cam_sensor_mclk4_suspend
+                                 &cam_sensor04_suspend_adlink_rst2
+                                 &cam_sensor04_power_adlink_suspend>;
+
+
+		clocks = <&camcc CAM_CC_MCLK4_CLK>;
+		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
+		assigned-clock-rates = <24000000>;
+
+		power-domains = <&camcc TITAN_TOP_GDSC>;
+		dovdd-supply  = <&vreg_l7f_1p8>;
+		avdd-supply = <&vdc_5v>;
+		dvdd-supply = <&vdc_5v>;
+
+		status = "okay";
+		port {
+			imx219_ep4: endpoint {
+				clock-lanes = <1>;
+				link-frequencies = /bits/ 64 <600000000>;
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&csiphy4_ep>;
+			};
+		};
+	};
+		
+};
+
+&cci1_i2c1 {
+	// CCI_I2C_SDA3 - CCI_I2C_SCL3  	
+
+	camera@1a {
+		//  CAM_1 
+		compatible = "sony,imx219";
+		reg = <0x1a>;
+
+		reset-gpios = <&tlmm 51 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "suspend";
+                pinctrl-0 = <&cam_sensor_mclk1_active
+                                &cam_sensor1_power_adlink_active
+                                &cam_sensor1_active_adlink_rst2>;
+                pinctrl-1 = <&cam_sensor_mclk1_suspend
+                                &cam_sensor1_power_adlink_suspend
+                                &cam_sensor1_suspend_adlink_rst2>;
+
+
+		clocks = <&camcc CAM_CC_MCLK1_CLK>;
+		assigned-clocks = <&camcc CAM_CC_MCLK1_CLK>;
+		assigned-clock-rates = <24000000>;
+
+		power-domains = <&camcc TITAN_TOP_GDSC>;
+		dovdd-supply  = <&vreg_l7f_1p8>;
+		avdd-supply = <&vdc_5v>;
+		dvdd-supply = <&vdc_5v>;
+
+		status = "disabled";
+		port {
+			imx219_ep1: endpoint {
+				clock-lanes = <1>;
+				link-frequencies = /bits/ 64 <600000000>;
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&csiphy1_ep>;
+			};
+		};
+	};
+	//CAM_5 
+	camera@1a {
+		compatible = "sony,imx219";
+		reg = <0x1a>;
+
+		reset-gpios = <&tlmm 154 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "suspend";
+                pinctrl-0 = <&cam_sensor5_active_adlink_rst2
+                                 &cam_sensor5_power_adlink_active>;
+                pinctrl-1 = <&cam_sensor5_suspend_adlink_rst2
+                                 &cam_sensor5_power_adlink_suspend>;
+
+
+		clocks = <&camcc CAM_CC_MCLK5_CLK>;
+		assigned-clocks = <&camcc CAM_CC_MCLK5_CLK>;
+		assigned-clock-rates = <24000000>;
+
+		power-domains = <&camcc TITAN_TOP_GDSC>;
+		dovdd-supply  = <&vreg_l7f_1p8>;
+		avdd-supply = <&vdc_5v>;
+		dvdd-supply = <&vdc_5v>;
+
+		status = "ok";
+		port {
+			imx219_ep5: endpoint {
+				clock-lanes = <1>;
+				link-frequencies = /bits/ 64 <600000000>;
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&csiphy5_ep>;
 			};
 		};
 	};
@@ -1581,7 +1850,7 @@
                 #gpio-cells = <2>;
                 #interrupt-cells = <2>;
 //                compatible = "st,st33htpm-i2c";
-		compatible = "infineon,slb9673";
+                compatible = "infineon,slb9673";
                 reg = <0x2e>;
 
                 label = "tpm";
@@ -1679,11 +1948,11 @@
 };
 
 &spmi_bus {
-	pm8150_0: pmic@0 {
-	rtc@6000 {
-	status = "disabled";
-	};
-	};
+        pm8150_0: pmic@0 {
+        rtc@6000 {
+        status = "disabled";
+        };
+        };
 };
 
 &i2c10
@@ -1693,7 +1962,7 @@
         #address-cells = <1>;
         #size-cells = <0>;
         status = "ok";
-        clock-frequency  = <400000>;
+        clock-frequency  = <100000>;
 
         i2c2_gpioext0@3e {
                 /* GPIO Expander 2 Mapping :
@@ -1727,11 +1996,11 @@
                 interrupt-parent = <&tlmm>;
                 interrupts = <109 IRQ_TYPE_EDGE_FALLING>;
         };
-	tlv320aic3x: tlv320aic3x@18 {
-                
-		#sound-dai-cells = <0>;
-		
-		compatible = "ti,tlv320aic3x";
+        tlv320aic3x: tlv320aic3x@18 {
+
+		#sound-dai-cells = <1>;
+
+                compatible = "ti,tlv320aic3x";
                 reg = <0x18>;
                 clock-names = "mclk";
                 AVDD-supply = <&codec_vreg>;
@@ -1742,13 +2011,18 @@
                 ai3x-micbias-vg = <3>;
                 status = "ok";
         };
-	wm8960: wm8960@1a {
+        wm8960_codec: wm8960@1a {
+		#sound-dai-cells = <1>;
+		
+
                 compatible = "wlf,wm8960";
                 reg = <0x1a>;
                 wlf,shared-lrclk;
+		clocks = <&audiocc LPASS_CDC_WSA_MCLK>;
+                clock-names = "mclk";
+
                 #address-cells = <1>;
                 #size-cells = <0>;
-		#sound-dai-cells = <0>;
                 status = "ok";
         };
 
@@ -1757,18 +2031,14 @@
 };
 &i2c1
 {       /*CSI0 */
-        status = "okay";
-};
-&i2c4
-{       /*CS1 */
-        status = "okay";
+        clock-frequency  = <400000>;
+        status = "disabled";
 };
 &i2c8
 {       /*I2C_PM*/
         clock-frequency  = <400000>;
         status = "okay";
 };
-
 &spi3 {
         status = "okay";
         pinctrl-names = "default";
@@ -1799,5 +2069,345 @@
                 spi-max-frequency = <500000>;
                 status = "okay";
         };
-};  
+};
+&tlmm {
+        cam_sensor_power_adlink_active: cam_sensor_power_adlink_active {
+                        mux {
+                                pins = "gpio115";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio115";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor_power_adlink_suspend: cam_sensor_power_adlink_suspend {
+                        mux {
+                                pins = "gpio115";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio115";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor_active_adlink_rst2: cam_sensor_active_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio116";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio116";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+       cam_sensor_suspend_adlink_rst2: cam_sensor_suspend_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio116";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio116";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+
+       cam_sensor5_power_adlink_active: cam_sensor5_power_adlink_active {
+                        mux {
+                                pins = "gpio153";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio153";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor5_power_adlink_suspend: cam_sensor5_power_adlink_suspend {
+                        mux {
+                                pins = "gpio153";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio153";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor5_active_adlink_rst2: cam_sensor5_active_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio154";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio154";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor5_suspend_adlink_rst2: cam_sensor5_suspend_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio154";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio154";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor04_power_adlink_active: cam_sensor04_power_adlink_active {
+                        mux {
+                                pins = "gpio144";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio144";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor04_power_adlink_suspend: cam_sensor04_power_adlink_suspend {
+                        mux {
+                                pins = "gpio144";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio144";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor04_active_adlink_rst2: cam_sensor04_active_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio145";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio145";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+        cam_sensor04_suspend_adlink_rst2: cam_sensor04_suspend_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio145";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio145";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+
+
+        cam_sensor3_power_adlink_active: cam_sensor3_power_adlink_active {
+                        mux {
+                                pins = "gpio125";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio125";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor3_power_adlink_suspend: cam_sensor3_power_adlink_suspend {
+                        mux {
+                                pins = "gpio125";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio125";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor3_active_adlink_rst2: cam_sensor3_active_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio126";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio126";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+
+        cam_sensor3_suspend_adlink_rst2: cam_sensor3_suspend_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio126";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio126";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+	/* cam0 -- cci0 */
+	
+	cam_sensor0_power_adlink_active: cam_sensor0_power_adlink_active {
+                        mux {
+                                pins = "gpio52";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio52";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+	cam_sensor0_power_adlink_suspend: cam_sensor0_power_adlink_suspend {
+                        mux {
+                                pins = "gpio52";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio52";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor0_active_adlink_rst0: cam_sensor0_active_adlink_rst0 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio3";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio3";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+        cam_sensor0_suspend_adlink_rst0: cam_sensor0_suspend_adlink_rst0 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio3";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio3";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+	/* cam1 --cci1 */
+
+	cam_sensor1_power_adlink_active: cam_sensor1_power_adlink_active {
+                        mux {
+                                pins = "gpio2";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio2";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+	 cam_sensor1_power_adlink_suspend: cam_sensor1_power_adlink_suspend {
+                        mux {
+                                pins = "gpio2";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio2";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+        cam_sensor1_active_adlink_rst2: cam_sensor1_active_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio51";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio51";
+                                bias-disable; /* No PULL */
+                                drive-strength = <2>; /* 2 MA */
+                                output-high;
+                        };
+                };
+        cam_sensor1_suspend_adlink_rst2: cam_sensor1_suspend_adlink_rst2 {
+                        /* RESET 2 */
+                        mux {
+                                pins = "gpio51";
+                                function = "gpio";
+                        };
+
+                        config {
+                                pins = "gpio51";
+                                bias-pull-down; /* PULL DOWN */
+                                drive-strength = <2>; /* 2 MA */
+                                output-low;
+                        };
+                };
+};
 
