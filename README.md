@@ -32,11 +32,11 @@
 
 | Interfaces                                 | Support |
 | ------------------------------------------ | ------- |
-| RAM [LPDDR4(4G/8G)]                        | Y       |
+| RAM [LPDDR5(4G/8G)]                        | Y       |
 | HDMI                                       | Y       |
 | UFS                                        | Y       |
 | SEMA 4.0                                   | Y       |
-| Debug Header                               | Y       |
+| SPI1                                       | Y       |
 | Ethernet - 0 & 1                           | Y       |
 | Wi-Fi(optional) [Azurewave AW-CM276NF]     | Y       |
 | Bluetooth(optional) [Azurewave AW-CM276NF] | Y       |
