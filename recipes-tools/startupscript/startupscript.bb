@@ -14,7 +14,6 @@ file://gpio_enable.sh \
 file://gpio.service \
 file://version.sh \
 file://version.service \
-file://version.c \
 file://gui.sh \
 file://fastboot.sh \
 file://gui.service \
@@ -22,6 +21,9 @@ file://wifiEnable.service \
 file://wifi.sh \
 file://checkinterface.c \
 "
+SRC_URI:append:lec-rb5 = "file://version-rb5.c"
+SRC_URI:append:lec-rb5n = "file://version-rb5n.c"
+
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_PACKAGES += "${PN}"
 SYSTEMD_SERVICE:${PN} += "version.service"
@@ -34,8 +36,17 @@ INITSCRIPT_PARAMS = "start 99 2 3 4 5 . stop 19 0 1 6 ."
 
 
 do_compile() {
-	${CC} -o ${WORKDIR}/version ${WORKDIR}/version.c
 	${CC} -o ${WORKDIR}/device-info ${WORKDIR}/checkinterface.c
+}
+
+do_compile:append:lec-rb5() {
+
+	${CC} -o ${WORKDIR}/version ${WORKDIR}/version-rb5.c
+}
+
+do_compile:append:lec-rb5n() {
+
+	${CC} -o ${WORKDIR}/version ${WORKDIR}/version-rb5n.c
 }
 
 do_install() {
