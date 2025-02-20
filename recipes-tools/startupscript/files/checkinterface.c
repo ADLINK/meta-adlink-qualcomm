@@ -299,10 +299,6 @@ int main()
     int i;
     int ret;
 
-    ret = gethostname(hostname, sizeof(hostname));
-    if (ret == 0)
-        printf("hostname: %s\n", "LEC-RB5");
-
     printf("\n*Peripheral device information*\n");
     printf("USB device connection   :\n");
     system("lsusb");
