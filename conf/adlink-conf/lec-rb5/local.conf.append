@@ -1,0 +1,9 @@
+CONNECTIVITY_CHECK_URIS = "https://www.google.com"
+
+DISTRO_FEATURES:append = " virtualization"
+
+IMAGE_INSTALL:append = " test-tools startupscript sema adlink-mdio-tool"
+IMAGE_INSTALL:append = " adlinkweston"
+IMAGE_INSTALL:append = " nxp-firmware kernel-module-nxp89xx lshw clinfo"
+
+
