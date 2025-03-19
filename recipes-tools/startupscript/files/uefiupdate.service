@@ -1,0 +1,14 @@
+[Unit]
+Description=Set Boot Success Flag on /dev/sde
+DefaultDependencies=no
+After=local-fs.target
+ 
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/sgdisk -A 11:set:54 /dev/sde
+ExecStartPost=/usr/sbin/sgdisk -A 34:set:54 /dev/sde
+TimeoutStartSec=30
+RemainAfterExit=true
+ 
+[Install]
+WantedBy=multi-user.target

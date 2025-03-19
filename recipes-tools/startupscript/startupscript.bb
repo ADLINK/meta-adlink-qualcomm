@@ -20,6 +20,7 @@ file://gui.service \
 file://wifiEnable.service \
 file://wifi.sh \
 file://checkinterface.c \
+file://uefiupdate.service \
 "
 SRC_URI:append:lec-rb5 = "file://version-rb5.c"
 SRC_URI:append:lec-rb5n = "file://version-rb5n.c"
@@ -30,6 +31,7 @@ SYSTEMD_SERVICE:${PN} += "version.service"
 SYSTEMD_SERVICE:${PN} += "gpio.service"
 SYSTEMD_SERVICE:${PN} += "gui.service"
 SYSTEMD_SERVICE:${PN} += "wifiEnable.service"
+SYSTEMD_SERVICE:${PN} += "uefiupdate.service"
 
 INITSCRIPT_NAME = "adlinkstartupscript"
 INITSCRIPT_PARAMS = "start 99 2 3 4 5 . stop 19 0 1 6 ."
@@ -83,6 +85,8 @@ do_install() {
 
 
         install -m 0644 ${WORKDIR}/fastboot.sh -D ${D}${sysconfdir}/
+
+        install -m 0644 ${WORKDIR}/uefiupdate.service -D ${D}${sysconfdir}/systemd/system/
 
         chmod +x ${D}${sysconfdir}/gpio_enable.sh
         chmod +x ${D}${sysconfdir}/version.sh
