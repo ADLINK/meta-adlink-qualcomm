@@ -1,18 +1,17 @@
-From 848403b902ee6179befae1400cc4d75dded5c851 Mon Sep 17 00:00:00 2001
+From e967af73007f789fafed99da041eac3fdb9f87b2 Mon Sep 17 00:00:00 2001
 From: "deepak.s" <deepak.s@adlinktech.com>
-Date: Thu, 27 Mar 2025 17:00:45 +0530
-Subject: [PATCH] Remove DSI attach to bind simple panel
+Date: Wed, 14 Feb 2024 11:59:08 +0530
+Subject: [PATCH] remove-attach-dsi
 
-Signed-off-by: deepak.s <deepak.s@adlinktech.com>
 ---
  drivers/gpu/drm/bridge/lontium-lt9611uxc.c | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/lontium-lt9611uxc.c b/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
-index b49776ca110f..e44cfb34afaf 100644
+index 33a928dc1f06..cd2057f861cf 100644
 --- a/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
 +++ b/drivers/gpu/drm/bridge/lontium-lt9611uxc.c
-@@ -971,23 +971,23 @@ static int lt9611uxc_probe(struct i2c_client *client)
+@@ -970,23 +970,23 @@ static int lt9611uxc_probe(struct i2c_client *client,
  	drm_bridge_add(&lt9611uxc->bridge);
  
  	/* Attach primary DSI, if specified */

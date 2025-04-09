@@ -1,17 +1,9 @@
 CONNECTIVITY_CHECK_URIS = "https://www.google.com"
 
-DISTRO_FEATURES:append = " virtualization opengl"
+DISTRO_FEATURES:append = " virtualization"
 
-IMAGE_INSTALL:append = " i2c-tools stress-ng pciutils bc lmsensors mpv"
-IMAGE_INSTALL:append = " canutils ethtool devmem2 iperf3 blueman bluez5"
-IMAGE_INSTALL:append = " packagegroup-core-buildessential android-tools"
-
-IMAGE_INSTALL:append = " test-tools adlink-mdio-tool startupscript sema"
-IMAGE_INSTALL:append = " adlinkweston git vim fbset"
-IMAGE_INSTALL:append = " nxp-firmware lshw clinfo"
+IMAGE_INSTALL:append = " test-tools startupscript sema adlink-mdio-tool"
+IMAGE_INSTALL:append = " adlinkweston"
+IMAGE_INSTALL:append = " nxp-firmware kernel-module-nxp89xx lshw clinfo"
 
 
-#weston_10.0.2.bb
-ERROR_QA:remove = "version-going-backwards"
-PREFERRED_VERSION:weston:forcevariable = "10.0.2"
-PREFERRED_PROVIDER_virtual/kernel = "linux-linaro-qcomlt"

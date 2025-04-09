@@ -2,13 +2,13 @@
 
 
 SUMMARY = "NXP/ADLINK firmware"
-DESCRIPTION = "integrating wifi firmwares "
+DESCRIPTION = "integrating wifi firmwares a "
 LICENSE = "CLOSED"
 
 inherit pkgconfig
 
-SRC_URI = "git://github.com/nxp-imx/imx-firmware.git;protocol=https;branch=lf-6.6.52_2.2.0"
-SRCREV = "2978f3c88d6bcc5695a7b45f1936f18d31eebfa8"
+SRC_URI = "git://github.com/NXP/imx-firmware.git;protocol=https;branch=lf-5.15.52_2.1.0"
+SRCREV = "b6f070e3d4cab23932d9e6bc29e3d884a7fd68f4"
 
 S = "${WORKDIR}/git"
 
