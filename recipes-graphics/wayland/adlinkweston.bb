@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/weston:"
 
 SUMMARY = "ADLINK weston image"
 DESCRIPTION = "added weston adlink image on background "

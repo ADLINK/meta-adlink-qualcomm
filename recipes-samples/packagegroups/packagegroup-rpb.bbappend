@@ -14,3 +14,26 @@ RDEPENDS:packagegroup-rpb:append = "\
     packagegroup-core-buildessential \
     android-tools \
     "
+
+
+RDEPENDS:packagegroup-rpb:append = "\
+	phoronix-test-suite \
+	dbench-dev \
+	dhrystone \
+	fio \
+	googlebenchmark-dev \
+	iozone3 \
+	libc-bench \
+	lmbench \
+	nbench-byte \
+	s-suite \
+	sysbench \
+	tinymembench \
+	tiobench \
+	whetstone \
+	cmake \
+	libgpiod \
+	libgpiod-tools \
+	libgpiod-dev \
+	glmark2 \
+	"
