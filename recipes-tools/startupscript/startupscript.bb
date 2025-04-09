@@ -53,11 +53,9 @@ do_compile:append:lec-rb5n() {
 
 do_install() {
 
-        install -d -m 0755 ${D}/usr${base_bindir}
-
-
         install -d ${D}${sysconfdir}/udev/
         install -d ${D}${sysconfdir}/udev/rules.d/
+        install -d ${D}${bindir}/
 
         install -d ${D}${sysconfdir}/systemd/
         install -d ${D}${sysconfdir}/systemd/system
