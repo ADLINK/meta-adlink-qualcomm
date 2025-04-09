@@ -1,9 +1,9 @@
-# Kirkstone
+# Scarthgap
 
-- Kernel version: 6.0.0
-- Released year: 2022
+- Kernel version: 6.6.9
+- Released year: 2025
 - Kernel support by Adlink(continuing).
-- Manifest of the Yocto BSP is [here](https://github.com/ADLINK/adlink-manifest/tree/lec-rb5-yocto-kirkstone).
+- Manifest of the Yocto BSP is [here](https://github.com/ADLINK/adlink-manifest/tree/lec-rb5-yocto-scarthgap).
 
 
 
