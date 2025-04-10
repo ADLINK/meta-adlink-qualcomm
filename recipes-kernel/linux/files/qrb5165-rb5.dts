@@ -26,10 +26,6 @@
                 hsuart2 = &uart13;
                 serial0 = &uart12;
                 sdhc2 = &sdhc_2;	
-
-//		serial0 = &uart12;
-//		serial1 = &uart6;
-//		sdhc2 = &sdhc_2;
 	};
 
 	chosen {
@@ -64,10 +60,6 @@
 	
   
  	bl: backlight {
-//                compatible = "gpio-backlight";
-//		pinctrl-0 = <&dsi0_back_light_en>;
-//               pinctrl-names = "default";
-//                gpios = <&pm8150l_gpios 10 GPIO_ACTIVE_HIGH>;
 		enable-gpios = <&tlmm 112 GPIO_ACTIVE_HIGH>;
         };
 
@@ -83,7 +75,7 @@
                         label = "dsi:backlight";
 	                gpios = <&pm8150l_gpios 10 GPIO_ACTIVE_HIGH>;
                         linux,default-trigger = "panic-indicator";
-                        default-state = "off";
+                        default-state = "on";
                 };
 
 
@@ -156,7 +148,7 @@
 			};
 		};
 
-		pm8150l-thermal {
+		pm8150l-pcb-thermal {
 			polling-delay-passive = <0>;
 			polling-delay = <0>;
 			thermal-sensors = <&pm8150l_adc_tm 1>;
@@ -293,7 +285,7 @@
 };
 
 &apps_rsc {
-	pm8009-rpmh-regulators {
+	regulators-0 {
 		compatible = "qcom,pm8009-1-rpmh-regulators";
 		qcom,pmic-id = "f";
 
@@ -339,7 +331,7 @@
 		};
 	};
 
-	pm8150-rpmh-regulators {
+	regulators-1 {
 		compatible = "qcom,pm8150-rpmh-regulators";
 		qcom,pmic-id = "a";
 
@@ -472,7 +464,7 @@
 		};
 	};
 
-	pm8150l-rpmh-regulators {
+	regulators-2 {
 		compatible = "qcom,pm8150l-rpmh-regulators";
 		qcom,pmic-id = "c";
 
@@ -590,47 +582,6 @@
 	firmware-name = "qcom/sm8250/cdsp.mbn";
 };
 
-&dsi0 {
-	status = "okay";
-	vdda-supply = <&vreg_l9a_1p2>;
-
-#if 0
-	qcom,dual-dsi-mode;
-	qcom,master-dsi;
-#endif
-	ports {
-		port@1 {
-			endpoint {
-				remote-endpoint = <&simple_lt96>;
-				data-lanes = <0 1 2 3>;
-			};
-		};
-	};
-	        panel@0 {
-                compatible = "adlink,lt9611uxc";
-                reg = <0>;
-                status = "ok";
-                ports {
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-
-                        port@0 {
-                                reg = <0>;
-                                simple_lt96: endpoint {
-                                        remote-endpoint = <&lt9611_a>;
-                                };
-                        };
-                };
-
-           };
-
-};
-
-&dsi0_phy {
-	status = "okay";
-	vdds-supply = <&vreg_l5a_0p88>;
-};
-
 &gmu {
 	status = "okay";
 };
@@ -677,7 +628,7 @@
 				reg = <0>;
 
 				lt9611_a: endpoint {
-					remote-endpoint = <&dsi0_out>;
+					remote-endpoint = <&mdss_dsi0_out>;
 				};
 			};
 
@@ -686,7 +637,7 @@
 				reg = <1>;
 
 				lt9611_b: endpoint {
-					remote-endpoint = <&dsi1_out>;
+					remote-endpoint = <&mdss_dsi1_out>;
 				};
 			};
 #endif
@@ -712,21 +663,60 @@
 	status = "okay";
 };
 
-&mdss_mdp {
+&mdss_dsi0 {
 	status = "okay";
+	vdda-supply = <&vreg_l9a_1p2>;
+
+#if 0
+	qcom,dual-dsi-mode;
+	qcom,master-dsi;
+#endif
+
+	ports {
+		port@1 {
+			endpoint {
+				remote-endpoint = <&simple_lt96>;
+				data-lanes = <0 1 2 3>;
+			};
+		};
+	};
+	        panel@0 {
+                compatible = "adlink,lt9611uxc";
+                reg = <0>;
+                status = "ok";
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+                                simple_lt96: endpoint {
+                                        remote-endpoint = <&lt9611_a>;
+                                };
+                        };
+                };
+
+           };
+};
+
+&mdss_dsi0_phy {
+	status = "okay";
+	vdds-supply = <&vreg_l5a_0p88>;
 };
 
 &pm8150_adc {
-	xo-therm@4c {
+	channel@4c {
 		reg = <ADC5_XO_THERM_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time = <200>;
+		label = "xo_therm";
 	};
 
-	wifi-therm@4e {
+	channel@4e {
 		reg = <ADC5_AMUX_THM2_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time = <200>;
+		label = "wifi_therm";
 	};
 };
 
@@ -797,10 +787,11 @@
 };
 
 &pm8150b_adc {
-	conn-therm@4f {
+	channel@4f {
 		reg = <ADC5_AMUX_THM3_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time = <200>;
+		label = "conn_therm";
 	};
 };
 
@@ -832,16 +823,18 @@
 };
 
 &pm8150l_adc {
-	skin-msm-therm@4e {
+	channel@4e {
 		reg = <ADC5_AMUX_THM2_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time = <200>;
+		label = "skin_msm_therm";
 	};
 
-	pm8150l-therm@4f {
+	channel@4f {
 		reg = <ADC5_AMUX_THM3_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time = <200>;
+		label = "pm8150l_therm";
 	};
 };
 
@@ -943,7 +936,7 @@
 };
 
 &q6afedai {
-	qi2s@16 {
+	dai@16 {
 		reg = <PRIMARY_MI2S_RX>;
 		qcom,sd-lines = <0 1 2 3>;
 	};
@@ -951,7 +944,7 @@
 
 /* TERT I2S Uses 1 I2S SD Lines for audio on LT9611 HDMI Bridge */
 &q6afedai {
-	qi2s@20 {
+	dai@20 {
 		reg = <TERTIARY_MI2S_RX>;
 		qcom,sd-lines = <0>;
 	};
@@ -980,7 +973,7 @@
 	cd-gpios = <&tlmm 77 GPIO_ACTIVE_LOW>;
 	bus-width = <4>;
 	no-sdio;
-	no-emmc;
+	no-mmc;
 };
 
 &slpi {
@@ -990,10 +983,9 @@
 
 &sound {
 	compatible = "qcom,qrb5165-rb5-sndcard";
-	status = "ok";
 	pinctrl-0 = <&tert_mi2s_active>,<&pri_mi2s_active>;
 	pinctrl-names = "default";
-	model = "ADLINK-LEC-RB5-SND";
+	model = "Qualcomm-RB5-WSA8815-Speakers-DMIC0";
 	audio-routing =
 		"SpkrLeft IN", "WSA_SPK1 OUT",
 		"SpkrRight IN", "WSA_SPK2 OUT",
@@ -1002,7 +994,7 @@
 		"MM_DL1",  "MultiMedia1 Playback",
 		"MM_DL2",  "MultiMedia2 Playback",
 		"MultiMedia3 Capture", "MM_UL3";
-	mi2s-ext-mclk = <1>, <0>, <0>, <0>, <0>, <0>;
+
 	mm1-dai-link {
 		link-name = "MultiMedia1";
 		cpu {
@@ -1038,49 +1030,48 @@
 			sound-dai = <&lt9611_codec 0>;
 		};
 	};
+
 	dma-dai-link {
-                link-name = "WSA Playback";
-                cpu {
-                        sound-dai = <&q6afedai WSA_CODEC_DMA_RX_0>;
-                };
+		link-name = "WSA Playback";
+		cpu {
+			sound-dai = <&q6afedai WSA_CODEC_DMA_RX_0>;
+		};
 
-                platform {
-                        sound-dai = <&q6routing>;
-                };
+		platform {
+			sound-dai = <&q6routing>;
+		};
 
-                codec {
-                        sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
-                };
-        };
+		codec {
+			sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
+		};
+	};
 
-        va-dai-link {
-                link-name = "VA Capture";
-                cpu {
-                        sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>;
-                };
+	va-dai-link {
+		link-name = "VA Capture";
+		cpu {
+			sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>;
+		};
 
-                platform {
-                        sound-dai = <&q6routing>;
-                };
+		platform {
+			sound-dai = <&q6routing>;
+		};
 
-                codec {
-                        sound-dai = <&vamacro 0>;
-                };
-        };
+		codec {
+			sound-dai = <&vamacro 0>;
+		};
+	};
 
-	primary-dai-link {
-                link-name = "Primary MI2S Playback";
-                cpu {
-                        sound-dai = <&q6afedai PRIMARY_MI2S_RX>;
-                };
-
-                platform {
-                        sound-dai = <&q6routing>;
-                };
-
-                codec {
-                        sound-dai = <&tlv320aic3x 0>;
-                };
+        primary-dai-link {
+            link-name = "Primary MI2S";
+            cpu {
+                sound-dai = <&q6afedai PRIMARY_MI2S_RX>;
+            };
+            platform {
+                sound-dai = <&q6routing>;
+            };
+            codec {
+                sound-dai = <&tlv320aic3x_codec 0>;
+            };
         };
 };
 
@@ -1103,7 +1094,9 @@
 };
 
 &swr0 {
-	left_spkr: wsa8810-left{
+	status = "okay";
+
+	left_spkr: speaker@0,3 {
 		compatible = "sdw10217211000";
 		reg = <0 3>;
 		powerdown-gpios = <&tlmm 170 GPIO_ACTIVE_HIGH>;
@@ -1112,7 +1105,7 @@
 		#sound-dai-cells = <0>;
 	};
 
-	right_spkr: wsa8810-right{
+	right_spkr: speaker@0,4 {
 		compatible = "sdw10217211000";
 		reg = <0 4>;
 		powerdown-gpios = <&tlmm 170 GPIO_ACTIVE_HIGH>;
@@ -1317,70 +1310,33 @@
 		};
 	};
 
-	cam2_default: cam2-default {
-		rst {
-			pins = "gpio78";
-			function = "gpio";
-
-			drive-strength = <2>;
-			bias-disable;
-		};
-
-		mclk {
-			pins = "gpio96";
-			function = "cam_mclk";
-
-			drive-strength = <16>;
-			bias-disable;
-		};
-	};
-
-	cam2_suspend: cam2-suspend {
-		rst {
-			pins = "gpio78";
-			function = "gpio";
-
-			drive-strength = <2>;
-			bias-pull-down;
-			output-low;
-		};
-
-		mclk {
-			pins = "gpio96";
-			function = "cam_mclk";
-
-			drive-strength = <2>;
-			bias-disable;
-		};
-	};
-
-	lt9611_irq_pin: lt9611-irq {
+	lt9611_irq_pin: lt9611-irq-state {
 		pins = "gpio63";
 		function = "gpio";
 		bias-disable;
 	};
 
-	sdc2_default_state: sdc2-default {
-		clk {
+	sdc2_default_state: sdc2-default-state {
+		clk-pins {
 			pins = "sdc2_clk";
 			bias-disable;
 			drive-strength = <16>;
 		};
 
-		cmd {
+		cmd-pins {
 			pins = "sdc2_cmd";
 			bias-pull-up;
 			drive-strength = <10>;
 		};
 
-		data {
+		data-pins {
 			pins = "sdc2_data";
 			bias-pull-up;
 			drive-strength = <10>;
 		};
 	};
 
-	sdc2_card_det_n: sd-card-det-n {
+	sdc2_card_det_n: sd-card-det-n-state {
 		pins = "gpio77";
 		function = "gpio";
 		bias-pull-up;
@@ -1400,14 +1356,6 @@
 
 &uart6 {
 	status = "okay";
-/*	bluetooth {
-		compatible = "qcom,qca6390-bt";
-		pinctrl-names = "default";
-		pinctrl-0 = <&bt_en_state>;
-
-		power-domains = <&qca639x>;
-		enable-gpios = <&tlmm 21 GPIO_ACTIVE_HIGH>;
-	};*/
 };
 
 &uart12 {
@@ -1445,9 +1393,9 @@
 };
 
 &usb_1_dwc3 {
-//        dr_mode = "otg";
-      dr_mode = "peripheral";
-        usb-role-switch;
+	dr_mode = "host";
+	status = "okay";
+//	usb-role-switch;
 };
 
 &usb_1_hsphy {
@@ -1500,6 +1448,10 @@
 	status = "okay";
 };
 
+&wsamacro {
+	status = "okay";
+};
+
 /* PINCTRL - additions to nodes defined in sm8250.dtsi */
 &qup_spi0_cs_gpio {
 	drive-strength = <6>;
@@ -1509,320 +1461,6 @@
 &qup_spi0_data_clk {
 	drive-strength = <6>;
 	bias-disable;
-};
-
-&camcc {
-	status = "okay";
-};
-
-&camss {
-	status = "okay";
-	vdda-phy-supply = <&vreg_l5a_0p88>;
-	vdda-pll-supply = <&vreg_l9a_1p2>;
-
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		/* The port index denotes CSIPHY id i.e. csiphy2 */
-		port@0 {
-			reg = <0>;
-			csiphy0_ep: endpoint {
-				clock-lanes = <0>;
-				data-lanes = <1 2>;
-				remote-endpoint = <&imx219_ep0>;
-			};
-
-		};
-		port@2 {
-			reg = <2>;
-			csiphy2_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx219_ep2>;
-			};
-
-		};
-		port@3 {
-			reg = <3>;
-			csiphy3_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx219_ep3>;
-			};
-
-		};
-		port@1 {
-			reg = <1>;
-			csiphy1_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx219_ep1>;
-			};
-
-		};
-		port@4 {
-			reg = <4>;
-			csiphy4_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx219_ep4>;
-			};
-
-		};
-		port@5 {
-			reg = <5>;
-			csiphy5_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				remote-endpoint = <&imx219_ep5>;
-			};
-
-		};
-	};
-};
-
-&cci0 {
-	clock-frequency=<37500000>;
-	status = "okay";
-};
-
-&cci0_i2c0 {
-	//CI_I2C_SCL0 - CCI_I2C_SDA0 		
-
-	ov5640@3c {
-		 // CAM_0 
-//		compatible = "sony,imx219";
-		compatible = "ovti,ov5640";
-		reg = <0x3c>;
-
-		reset-gpios = <&tlmm 3 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-
-	        pinctrl-0 = <&cam_sensor_mclk0_active
-                                &cam_sensor0_power_adlink_active
-                                &cam_sensor0_active_adlink_rst0 >;
-                pinctrl-1 = <&cam_sensor_mclk0_suspend
-                                &cam_sensor0_power_adlink_suspend
-                                &cam_sensor0_suspend_adlink_rst0>;
-
-		clocks = <&camcc CAM_CC_MCLK0_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK0_CLK>;
-		assigned-clock-rates = <24000000>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		DOVDD-supply  = <&vreg_l7f_1p8>;
-		AVDD-supply = <&vreg_l6f_2p8>;
-		DVDD-supply = <&vreg_l2f_1p2>;
-	
-//		dovdd-supply  = <&vreg_l7f_1p8>;
-//		avdd-supply = <&vdc_5v>;
-//		dvdd-supply = <&vdc_5v>;
-
-		status = "okay";
-		port {
-			imx219_ep0: endpoint {
-				clock-lanes = <0>;
-				link-frequencies = /bits/ 64 <456000000>;
-				data-lanes = <1 2>;
-				remote-endpoint = <&csiphy0_ep>;
-			};
-		};
-	};
-	// CAM_2 
-	imx214 {
-		compatible = "sony,imx214";
-		reg = <0x1a>;
-
-		reset-gpios = <&tlmm 116 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-
-                pinctrl-0 = <&cam_sensor_mclk2_active
-                                 &cam_sensor_active_adlink_rst2
-                                 &cam_sensor_power_adlink_active>;
-                pinctrl-1 = <&cam_sensor_mclk2_suspend
-                                 &cam_sensor_suspend_adlink_rst2
-                                 &cam_sensor_power_adlink_suspend>;
-
-		clocks = <&camcc CAM_CC_MCLK2_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
-		assigned-clock-rates = <24000000>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		dovdd-supply  = <&vreg_l7f_1p8>;
-		avdd-supply = <&vdc_5v>;
-		dvdd-supply = <&vdc_5v>;
-
-		status = "disabled";
-		port {
-			imx219_ep2: endpoint {
-				clock-lanes = <1>;
-				link-frequencies = /bits/ 64 <600000000>;
-				data-lanes = <1 2 3 4>;
-				remote-endpoint = <&csiphy2_ep>;
-			};
-		};
-	};
-};
-
-&cci0_i2c1 {
-	// CCI_I2C_SDA1 - CCI_I2C_SCL1 
-
-	imx214@1a {
-		//CAM 3
-		compatible = "sony,imx214";
-		reg = <0x1a>;
-
-		reset-gpios = <&tlmm 126 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-                pinctrl-0 = <&cam_sensor_mclk3_active
-                                 &cam_sensor3_active_adlink_rst2
-                                 &cam_sensor3_power_adlink_active>;
-                pinctrl-1 = <&cam_sensor_mclk3_suspend
-                                 &cam_sensor3_suspend_adlink_rst2
-                                 &cam_sensor3_power_adlink_suspend>;
-
-		enable-gpios = <&tlmm 125 GPIO_ACTIVE_HIGH>;
-		clocks = <&camcc CAM_CC_MCLK3_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK3_CLK>;
-		assigned-clock-rates = <24000000>;
-		clock-frequency = <24000000>;
-
-		vana-supply = <&vreg_l6f_2p8>;
-		vdig-supply = <&vreg_l2f_1p2>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		dovdd-supply  = <&vreg_l7f_1p8>;
-		avdd-supply = <&vreg_l6f_2p8>;
-		dvdd-supply = <&vreg_l2f_1p2>;
-		rotation = <180>;
-		
-		status = "ok";
-		port {
-			imx219_ep3: endpoint {
-				clock-lanes = <1>;
-				link-frequencies = /bits/ 64 <480000000>;
-				data-lanes = <1 2 3 4>;
-				remote-endpoint = <&csiphy3_ep>;
-			};
-		};
-	};
-};
-
-
-&cci1 {
-	status = "disabled";
-};
-
-&cci1_i2c0{
-	// CCI_I2C_SDA2 - CCI_I2C_SCL2 
-
-	camera@1a {
-		//CAM 4
-		compatible = "sony,imx219";
-		reg = <0x1a>;
-
-		reset-gpios = <&tlmm 145  GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-                 pinctrl-0 = <&cam_sensor_mclk4_active
-                                 &cam_sensor04_active_adlink_rst2
-                                 &cam_sensor04_power_adlink_active>;
-                pinctrl-1 = <&cam_sensor_mclk4_suspend
-                                 &cam_sensor04_suspend_adlink_rst2
-                                 &cam_sensor04_power_adlink_suspend>;
-
-
-		clocks = <&camcc CAM_CC_MCLK4_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
-		assigned-clock-rates = <24000000>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		dovdd-supply  = <&vreg_l7f_1p8>;
-		avdd-supply = <&vdc_5v>;
-		dvdd-supply = <&vdc_5v>;
-
-		status = "okay";
-		port {
-			imx219_ep4: endpoint {
-				clock-lanes = <1>;
-				link-frequencies = /bits/ 64 <600000000>;
-				data-lanes = <1 2 3 4>;
-				remote-endpoint = <&csiphy4_ep>;
-			};
-		};
-	};
-		
-};
-
-&cci1_i2c1 {
-	// CCI_I2C_SDA3 - CCI_I2C_SCL3  	
-
-	camera@1a {
-		//  CAM_1 
-		compatible = "sony,imx219";
-		reg = <0x1a>;
-
-		reset-gpios = <&tlmm 51 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-                pinctrl-0 = <&cam_sensor_mclk1_active
-                                &cam_sensor1_power_adlink_active
-                                &cam_sensor1_active_adlink_rst2>;
-                pinctrl-1 = <&cam_sensor_mclk1_suspend
-                                &cam_sensor1_power_adlink_suspend
-                                &cam_sensor1_suspend_adlink_rst2>;
-
-
-		clocks = <&camcc CAM_CC_MCLK1_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK1_CLK>;
-		assigned-clock-rates = <24000000>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		dovdd-supply  = <&vreg_l7f_1p8>;
-		avdd-supply = <&vdc_5v>;
-		dvdd-supply = <&vdc_5v>;
-
-		status = "disabled";
-		port {
-			imx219_ep1: endpoint {
-				clock-lanes = <1>;
-				link-frequencies = /bits/ 64 <600000000>;
-				data-lanes = <1 2 3 4>;
-				remote-endpoint = <&csiphy1_ep>;
-			};
-		};
-	};
-	//CAM_5 
-	camera@1a {
-		compatible = "sony,imx219";
-		reg = <0x1a>;
-
-		reset-gpios = <&tlmm 154 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "suspend";
-                pinctrl-0 = <&cam_sensor5_active_adlink_rst2
-                                 &cam_sensor5_power_adlink_active>;
-                pinctrl-1 = <&cam_sensor5_suspend_adlink_rst2
-                                 &cam_sensor5_power_adlink_suspend>;
-
-
-		clocks = <&camcc CAM_CC_MCLK5_CLK>;
-		assigned-clocks = <&camcc CAM_CC_MCLK5_CLK>;
-		assigned-clock-rates = <24000000>;
-
-		power-domains = <&camcc TITAN_TOP_GDSC>;
-		dovdd-supply  = <&vreg_l7f_1p8>;
-		avdd-supply = <&vdc_5v>;
-		dvdd-supply = <&vdc_5v>;
-
-		status = "ok";
-		port {
-			imx219_ep5: endpoint {
-				clock-lanes = <1>;
-				link-frequencies = /bits/ 64 <600000000>;
-				data-lanes = <1 2 3 4>;
-				remote-endpoint = <&csiphy5_ep>;
-			};
-		};
-	};
 };
 
 &i2c15
@@ -1849,10 +1487,8 @@
         tpm:  st33tphf2xi2c@2e {
                 #gpio-cells = <2>;
                 #interrupt-cells = <2>;
-//                compatible = "st,st33htpm-i2c";
                 compatible = "infineon,slb9673";
                 reg = <0x2e>;
-
                 label = "tpm";
                 pinctrl-names = "default";
                 pinctrl-0 = <&nfc_int_active &nfc_enable_active &dsi0_lcd0_en &dsi0_TE_en>; //gpio110 - TPM_PP ; gpio111 - TPM_LP
@@ -1996,7 +1632,7 @@
                 interrupt-parent = <&tlmm>;
                 interrupts = <109 IRQ_TYPE_EDGE_FALLING>;
         };
-        tlv320aic3x: tlv320aic3x@18 {
+        tlv320aic3x_codec: tlv320aic3x@18 {
 
 		#sound-dai-cells = <1>;
 
@@ -2070,6 +1706,7 @@
                 status = "okay";
         };
 };
+
 &tlmm {
         cam_sensor_power_adlink_active: cam_sensor_power_adlink_active {
                         mux {
