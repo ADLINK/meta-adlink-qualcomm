@@ -1,3 +1,4 @@
 # ADLINK Yocto Project Release layers
 BBLAYERS += "${OEROOT}/meta-adlink-qualcomm"
+BBLAYERS += "${OEROOT}/layers/meta-adlink-sema"
 
