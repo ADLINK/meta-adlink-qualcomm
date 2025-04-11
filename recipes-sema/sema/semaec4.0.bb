@@ -10,8 +10,8 @@ LICENSE = "CLOSED"
 inherit module
 
 SRCBRANCH = "sema-ec"
-SRCREV = "0450280a1878bd2bffe98b36114a7e9fc8914802"
-SRC_URI = "git://github.com/ADLINK/sema-linux.git;branch=${SRCBRANCH};protocol=http \
+SRCREV = "${AUTOREV}"
+SRC_URI = "git://github.com/ADLINK/sema-linux-ec.git;branch=${SRCBRANCH};protocol=http \
            "
 
 SRC_URI:append = " file://Makefile"
