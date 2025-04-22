@@ -20,6 +20,7 @@ file://gui.service \
 file://wifiEnable.service \
 file://wifi.sh \
 file://checkinterface.c \
+file://USBdevicemode.sh \
 file://uefiupdate.service \
 "
 SRC_URI:append:lec-rb5 = "file://version-rb5.c"
@@ -81,7 +82,7 @@ do_install() {
         install -m 0644 ${WORKDIR}/version -D ${D}${bindir}
         install -m 0644 ${WORKDIR}/device-info -D ${D}${bindir}
 
-
+	install -m 0644 ${WORKDIR}/USBdevicemode.sh -D ${D}${sysconfdir}/
         install -m 0644 ${WORKDIR}/fastboot.sh -D ${D}${sysconfdir}/
 
         install -m 0644 ${WORKDIR}/uefiupdate.service -D ${D}${sysconfdir}/systemd/system/
@@ -91,6 +92,7 @@ do_install() {
         chmod +x ${D}${sysconfdir}/gui.sh
         chmod +x ${D}${sysconfdir}/fastboot.sh
         chmod +x ${D}${sysconfdir}/wifi.sh
+	chmod +x ${D}${sysconfdir}/USBdevicemode.sh
 	chmod +x ${D}${bindir}/version 
 	chmod +x ${D}${bindir}/device-info 
 
