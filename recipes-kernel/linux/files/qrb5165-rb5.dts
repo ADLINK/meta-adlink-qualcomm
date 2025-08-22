@@ -277,6 +277,15 @@
 		wlan-en-gpios = <&tlmm 20 GPIO_ACTIVE_HIGH>;
 	};
 
+        usb_otg_vbus: regulator-0 {
+                compatible = "regulator-fixed";
+                regulator-name = "otg_vbus";
+                regulator-min-microvolt = <5000000>;
+                regulator-max-microvolt = <5000000>;
+                enable-active-high;
+        };
+
+
 };
 
 &adsp {
@@ -981,6 +990,7 @@
 	firmware-name = "qcom/sm8250/slpi.mbn";
 };
 
+
 &sound {
 	compatible = "qcom,qrb5165-rb5-sndcard";
 	pinctrl-0 = <&tert_mi2s_active>,<&pri_mi2s_active>;
@@ -1396,6 +1406,14 @@
 	dr_mode = "otg";
 	status = "okay";
 	usb-role-switch;
+
+        connector {
+                compatible = "gpio-usb-b-connector", "usb-b-connector";
+                id-gpios = <&tlmm 93 GPIO_ACTIVE_HIGH>;
+                type = "micro";
+                vbus-supply = <&usb_otg_vbus>;
+        };
+
 };
 
 &usb_1_hsphy {
