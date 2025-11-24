@@ -1,0 +1,32 @@
+From fa89dc4331a1e424f833dd33939cc19f8b9f37a1 Mon Sep 17 00:00:00 2001
+From: "deepak.s" <deepak.s@adlinktech.com>
+Date: Mon, 24 Nov 2025 15:24:26 +0530
+Subject: [PATCH] Reset kernel when UFS init failed due to race condition
+
+---
+ drivers/ufs/core/ufshcd.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/ufs/core/ufshcd.c b/drivers/ufs/core/ufshcd.c
+index b9d185f323d9..b73c72213935 100644
+--- a/drivers/ufs/core/ufshcd.c
++++ b/drivers/ufs/core/ufshcd.c
+@@ -37,6 +37,7 @@
+ #include "ufs_bsg.h"
+ #include "ufshcd-crypto.h"
+ #include <asm/unaligned.h>
++#include <linux/reboot.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/ufs.h>
+@@ -4570,6 +4571,7 @@ static int ufshcd_change_power_mode(struct ufs_hba *hba,
+ 	if (ret) {
+ 		dev_err(hba->dev,
+ 			"%s: power mode change failed %d\n", __func__, ret);
++		    emergency_restart();
+ 	} else {
+ 		ufshcd_vops_pwr_change_notify(hba, POST_CHANGE, NULL,
+ 								pwr_mode);
+-- 
+2.25.1
+
