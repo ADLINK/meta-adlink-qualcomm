@@ -17,4 +17,5 @@ SRC_URI:append = " \
     file://0004-LT9611-bridge-to-support-FHD-resolution.patch \
     file://0005-Remove-DSI-attach-to-bind-simple-panel.patch \ 
     file://0006-Uart-fix-zero-Rx-bytes.patch \
+    file://0007-UFS-clock-failure-restart-kernel.patch \
     "
