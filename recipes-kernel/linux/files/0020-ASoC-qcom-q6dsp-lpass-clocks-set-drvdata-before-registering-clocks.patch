@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Asuvath <asuvath.monikandan@adlinktech.com>
+Date: Wed, 7 Oct 2026 18:30:00 +0530
+Subject: [PATCH] ASoC: qcom: q6dsp-lpass-clocks: set drvdata before registering
+ clocks
+
+q6dsp_clock_dev_probe() adds the OF clock provider before it sets
+drvdata, but the clock ops get their struct q6dsp_cc from
+dev_get_drvdata(). A consumer probing in that window, such as the LPASS
+LPI pinctrl, can prepare a clock while drvdata is still NULL and
+dereferences NULL in clk_vote_q6dsp_block(). This happens with the clk
+prepare_lock held, so later clock users block and the boot stalls.
+
+Set drvdata before any clock is registered.
+
+Upstream-Status: Pending
+---
+--- a/sound/soc/qcom/qdsp6/q6dsp-lpass-clocks.c
++++ b/sound/soc/qcom/qdsp6/q6dsp-lpass-clocks.c
+@@ -147,6 +147,9 @@
+ 	cc->dev = dev;
+ 	q6dsp_clks = desc->clks;
+ 
++	/* the clk ops read cc from drvdata: set it before any clock is visible */
++	dev_set_drvdata(dev, cc);
++
+ 	for (i = 0; i < desc->num_clks; i++) {
+ 		unsigned int id = q6dsp_clks[i].clk_id;
+ 		struct clk_init_data init = {
+@@ -179,8 +182,6 @@
+ 	if (ret)
+ 		return ret;
+ 
+-	dev_set_drvdata(dev, cc);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(q6dsp_clock_dev_probe);

@@ -1,0 +1,320 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Asuvath <asuvath.monikandan@adlinktech.com>
+Date: Thu, 1 Oct 2026 16:30:00 +0530
+Subject: [PATCH] serial: qcom-geni: fix console/tty tx race that stalls the tty
+
+When a printk arrives while a tty transfer is in progress, the console
+code starts its own tx command on top of the active one and re-issues
+the tty command from a stale tx_remaining. Bytes are left in the FIFO
+with no command to send them, start_tx() no longer restarts, and every
+tty close then waits out closing_wait (30 s).
+
+Backport the upstream fixes, adapted to the driver as carried by
+0006-Uart-fix-zero-Rx-bytes.patch (FIFO only):
+
+  cc4a0e5754a1 ("serial: qcom-geni: fix console corruption")
+  f97cdbbf187f ("serial: qcom-geni: fix false console tx restart")
+  c80ee36ac8f9 ("serial: qcom-geni: fix fifo polling timeout")
+  b26d1ad12212 ("serial: qcom-geni: introduce qcom_geni_serial_poll_bitfield()")
+
+and reset tx_remaining/tx_queued whenever a tx command is cancelled.
+shutdown() is left unchanged, as cancelling the tx command there hangs
+the console transmitter (fixed upstream by 9aff74cc4e9e "serial:
+qcom-geni: fix console shutdown hang"). The rx path is not touched.
+
+Upstream-Status: Backport [adapted]
+---
+--- a/drivers/tty/serial/qcom_geni_serial.c
++++ b/drivers/tty/serial/qcom_geni_serial.c
+@@ -30,6 +30,14 @@
+ #define SE_UART_TX_WORD_LEN		0x268
+ #define SE_UART_TX_STOP_BIT_LEN		0x26c
+ #define SE_UART_TX_TRANS_LEN		0x270
++
++/* Not defined in this kernel's geni-se.h */
++#ifndef SE_GENI_M_GP_LENGTH
++#define SE_GENI_M_GP_LENGTH		0x910
++#endif
++#ifndef GP_LENGTH
++#define GP_LENGTH			GENMASK(31, 0)
++#endif
+ #define SE_UART_RX_TRANS_CFG		0x280
+ #define SE_UART_RX_WORD_LEN		0x28c
+ #define SE_UART_RX_STALE_CNT		0x294
+@@ -135,6 +143,8 @@
+ 	bool brk;
+ 
+ 	unsigned int tx_remaining;
++	unsigned int tx_queued;
++	unsigned long poll_timeout_us;
+ 	int wakeup_irq;
+ 	bool rx_tx_swap;
+ 	bool cts_rts_swap;
+@@ -261,27 +271,18 @@
+ 	return port;
+ }
+ 
+-static bool qcom_geni_serial_poll_bit(struct uart_port *uport,
+-				int offset, int field, bool set)
++static bool qcom_geni_serial_poll_bitfield(struct uart_port *uport,
++					   unsigned int offset, u32 field, u32 val)
+ {
+ 	u32 reg;
+ 	struct qcom_geni_serial_port *port;
+-	unsigned int baud;
+-	unsigned int fifo_bits;
+ 	unsigned long timeout_us = 20000;
+ 	struct qcom_geni_private_data *private_data = uport->private_data;
+ 
+ 	if (private_data->drv) {
+ 		port = to_dev_port(uport, uport);
+-		baud = port->baud;
+-		if (!baud)
+-			baud = 115200;
+-		fifo_bits = port->tx_fifo_depth * port->tx_fifo_width;
+-		/*
+-		 * Total polling iterations based on FIFO worth of bytes to be
+-		 * sent at current baud. Add a little fluff to the wait.
+-		 */
+-		timeout_us = ((fifo_bits * USEC_PER_SEC) / baud) + 500;
++		if (port->poll_timeout_us)
++			timeout_us = port->poll_timeout_us;
+ 	}
+ 
+ 	/*
+@@ -291,7 +292,7 @@
+ 	timeout_us = DIV_ROUND_UP(timeout_us, 10) * 10;
+ 	while (timeout_us) {
+ 		reg = readl(uport->membase + offset);
+-		if ((bool)(reg & field) == set)
++		if ((reg & field) == val)
+ 			return true;
+ 		udelay(10);
+ 		timeout_us -= 10;
+@@ -299,6 +300,18 @@
+ 	return false;
+ }
+ 
++static bool qcom_geni_serial_poll_bit(struct uart_port *uport,
++				      unsigned int offset, u32 field, bool set)
++{
++	return qcom_geni_serial_poll_bitfield(uport, offset, field,
++					      set ? field : 0);
++}
++
++static bool qcom_geni_serial_main_active(struct uart_port *uport)
++{
++	return readl(uport->membase + SE_GENI_STATUS) & M_GENI_CMD_ACTIVE;
++}
++
+ static void qcom_geni_serial_setup_tx(struct uart_port *uport, u32 xmit_size)
+ {
+ 	u32 m_cmd;
+@@ -311,18 +324,38 @@
+ static void qcom_geni_serial_poll_tx_done(struct uart_port *uport)
+ {
+ 	int done;
+-	u32 irq_clear = M_CMD_DONE_EN;
+ 
+ 	done = qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+ 						M_CMD_DONE_EN, true);
+ 	if (!done) {
+ 		writel(M_GENI_CMD_ABORT, uport->membase +
+ 						SE_GENI_M_CMD_CTRL_REG);
+-		irq_clear |= M_CMD_ABORT_EN;
+ 		qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+ 							M_CMD_ABORT_EN, true);
++		writel(M_CMD_ABORT_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
+ 	}
+-	writel(irq_clear, uport->membase + SE_GENI_M_IRQ_CLEAR);
++}
++
++static void qcom_geni_serial_cancel_tx_cmd(struct uart_port *uport)
++{
++	struct qcom_geni_serial_port *port = to_dev_port(uport, uport);
++
++	if (qcom_geni_serial_main_active(uport)) {
++		geni_se_cancel_m_cmd(&port->se);
++		if (!qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
++							M_CMD_CANCEL_EN, true)) {
++			geni_se_abort_m_cmd(&port->se);
++			qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
++							M_CMD_ABORT_EN, true);
++			writel(M_CMD_ABORT_EN, uport->membase +
++							SE_GENI_M_IRQ_CLEAR);
++		}
++		writel(M_CMD_CANCEL_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
++	}
++
++	/* No command is active any more, so nothing is left in flight */
++	port->tx_remaining = 0;
++	port->tx_queued = 0;
+ }
+ 
+ static void qcom_geni_serial_abort_rx(struct uart_port *uport)
+@@ -384,6 +417,7 @@
+ 							unsigned char c)
+ {
+ 	writel(DEF_TX_WM, uport->membase + SE_GENI_TX_WATERMARK_REG);
++	writel(M_CMD_DONE_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
+ 	qcom_geni_serial_setup_tx(uport, 1);
+ 	WARN_ON(!qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+ 						M_TX_FIFO_WATERMARK_EN, true));
+@@ -394,6 +428,15 @@
+ #endif
+ 
+ #ifdef CONFIG_SERIAL_QCOM_GENI_CONSOLE
++static void qcom_geni_serial_drain_fifo(struct uart_port *uport)
++{
++	struct qcom_geni_serial_port *port = to_dev_port(uport, uport);
++
++	/* Wait until every byte queued for the current command is sent */
++	qcom_geni_serial_poll_bitfield(uport, SE_GENI_M_GP_LENGTH, GP_LENGTH,
++			port->tx_queued);
++}
++
+ static void qcom_geni_serial_wr_char(struct uart_port *uport, unsigned char ch)
+ {
+ 	struct qcom_geni_private_data *private_data = uport->private_data;
+@@ -428,6 +471,7 @@
+ 	}
+ 
+ 	writel(DEF_TX_WM, uport->membase + SE_GENI_TX_WATERMARK_REG);
++	writel(M_CMD_DONE_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
+ 	qcom_geni_serial_setup_tx(uport, bytes_to_send);
+ 	for (i = 0; i < count; ) {
+ 		size_t chars_to_write = 0;
+@@ -468,8 +512,6 @@
+ 	struct qcom_geni_serial_port *port;
+ 	bool locked = true;
+ 	unsigned long flags;
+-	u32 geni_status;
+-	u32 irq_en;
+ 
+ 	WARN_ON(co->index < 0 || co->index >= GENI_UART_CONS_PORTS);
+ 
+@@ -483,39 +525,25 @@
+ 	else
+ 		spin_lock_irqsave(&uport->lock, flags);
+ 
+-	geni_status = readl(uport->membase + SE_GENI_STATUS);
+-
+-	/* Cancel the current write to log the fault */
+-	if (!locked) {
+-		geni_se_cancel_m_cmd(&port->se);
+-		if (!qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+-						M_CMD_CANCEL_EN, true)) {
+-			geni_se_abort_m_cmd(&port->se);
+-			qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+-							M_CMD_ABORT_EN, true);
+-			writel(M_CMD_ABORT_EN, uport->membase +
+-							SE_GENI_M_IRQ_CLEAR);
+-		}
+-		writel(M_CMD_CANCEL_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
+-	} else if ((geni_status & M_GENI_CMD_ACTIVE) && !port->tx_remaining) {
++	if (qcom_geni_serial_main_active(uport)) {
+ 		/*
+-		 * It seems we can't interrupt existing transfers if all data
+-		 * has been sent, in which case we need to look for done first.
++		 * A tty transfer is in progress. Let what is already in the
++		 * FIFO go out (or the whole command finish, if all its data
++		 * has been queued), then cancel it. Starting our own command
++		 * on top of it corrupts both outputs and can leave the tty
++		 * transmitter stalled for good. The tty side restarts from
++		 * its write buffer once CMD_DONE/watermark fire again.
+ 		 */
+-		qcom_geni_serial_poll_tx_done(uport);
++		if (!locked || port->tx_remaining == 0)
++			qcom_geni_serial_poll_tx_done(uport);
++		else
++			qcom_geni_serial_drain_fifo(uport);
+ 
+-		if (!uart_circ_empty(&uport->state->xmit)) {
+-			irq_en = readl(uport->membase + SE_GENI_M_IRQ_EN);
+-			writel(irq_en | M_TX_FIFO_WATERMARK_EN,
+-					uport->membase + SE_GENI_M_IRQ_EN);
+-		}
++		qcom_geni_serial_cancel_tx_cmd(uport);
+ 	}
+ 
+ 	__qcom_geni_serial_console_write(uport, s, count);
+ 
+-	if (port->tx_remaining)
+-		qcom_geni_serial_setup_tx(uport, port->tx_remaining);
+-
+ 	if (locked)
+ 		spin_unlock_irqrestore(&uport->lock, flags);
+ }
+@@ -612,7 +640,6 @@
+ {
+ 	u32 irq_en;
+ 	u32 status;
+-	struct qcom_geni_serial_port *port = to_dev_port(uport, uport);
+ 
+ 	irq_en = readl(uport->membase + SE_GENI_M_IRQ_EN);
+ 	irq_en &= ~(M_CMD_DONE_EN | M_TX_FIFO_WATERMARK_EN);
+@@ -623,15 +650,7 @@
+ 	if (!(status & M_GENI_CMD_ACTIVE))
+ 		return;
+ 
+-	geni_se_cancel_m_cmd(&port->se);
+-	if (!qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+-						M_CMD_CANCEL_EN, true)) {
+-		geni_se_abort_m_cmd(&port->se);
+-		qcom_geni_serial_poll_bit(uport, SE_GENI_M_IRQ_STATUS,
+-						M_CMD_ABORT_EN, true);
+-		writel(M_CMD_ABORT_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
+-	}
+-	writel(M_CMD_CANCEL_EN, uport->membase + SE_GENI_M_IRQ_CLEAR);
++	qcom_geni_serial_cancel_tx_cmd(uport);
+ }
+ 
+ static void qcom_geni_serial_start_rx(struct uart_port *uport)
+@@ -757,6 +776,7 @@
+ 	if (!port->tx_remaining) {
+ 		qcom_geni_serial_setup_tx(uport, pending);
+ 		port->tx_remaining = pending;
++		port->tx_queued = 0;
+ 
+ 		irq_en = readl(uport->membase + SE_GENI_M_IRQ_EN);
+ 		if (!(irq_en & M_TX_FIFO_WATERMARK_EN))
+@@ -784,6 +804,7 @@
+ 		uport->icount.tx += tx_bytes;
+ 		remaining -= tx_bytes;
+ 		port->tx_remaining -= tx_bytes;
++		port->tx_queued += tx_bytes;
+ 	}
+ 
+ 	xmit->tail = tail;
+@@ -1020,6 +1041,7 @@
+ 	unsigned long clk_rate;
+ 	u32 ver, sampling_rate;
+ 	unsigned int avg_bw_core;
++	unsigned long timeout;
+ 
+ 	qcom_geni_serial_stop_rx(uport);
+ 	/* baud rate */
+@@ -1101,9 +1123,22 @@
+ 	else
+ 		tx_trans_cfg |= UART_CTS_MASK;
+ 
+-	if (baud)
++	if (baud) {
+ 		uart_update_timeout(uport, termios->c_cflag, baud);
+ 
++		/*
++		 * Make sure that qcom_geni_serial_poll_bitfield() waits for
++		 * the FIFO, two-word intermediate transfer register and shift
++		 * register to clear.
++		 *
++		 * Note that uart_fifo_timeout() also adds a 20 ms margin.
++		 */
++		timeout = jiffies_to_usecs(uart_fifo_timeout(uport));
++		if (port->tx_fifo_depth)
++			timeout += 3 * timeout / port->tx_fifo_depth;
++		WRITE_ONCE(port->poll_timeout_us, timeout);
++	}
++
+ 	if (!uart_console(uport))
+ 		writel(port->loopback,
+ 				uport->membase + SE_UART_LOOPBACK_CFG);
