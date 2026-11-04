@@ -19,4 +19,5 @@ SRC_URI:append = " \
     file://0006-Uart-fix-zero-Rx-bytes.patch \
     file://0007-UFS-clock-failure-restart-kernel.patch \
     file://0017-serial-qcom-geni-fix-console-tty-tx-stall.patch \
+    file://0020-ASoC-qcom-q6dsp-lpass-clocks-set-drvdata-before-registering-clocks.patch \
     "
