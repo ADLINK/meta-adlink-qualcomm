@@ -18,4 +18,5 @@ SRC_URI:append = " \
     file://0005-Remove-DSI-attach-to-bind-simple-panel.patch \ 
     file://0006-Uart-fix-zero-Rx-bytes.patch \
     file://0007-UFS-clock-failure-restart-kernel.patch \
+    file://0017-serial-qcom-geni-fix-console-tty-tx-stall.patch \
     "
